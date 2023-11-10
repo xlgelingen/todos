@@ -44,7 +44,7 @@
     </div>
 
     <script>
-        // 1.1 定义 API 接口
+        //1. 构建公共方法 1.1 定义 API 接口
         const API_TODOS = "https://api.aitschool.com/api/web/todos";
         const API_TODO = id => `https://api.aitschool.com/api/web/todos/${id}`;
 
@@ -63,19 +63,19 @@
                 this.getTodos();
             },
 
-            //2.获取数据，修改getTodos 方法
+            //2.获取数据，2.2创建getTodos 方法
             getTodos: function () {
-                //2.2通过 XHR 和 API 获取 todos 的数据。
+                //2.3通过 XHR 和 API 获取 todos 的数据。
                 this._XHR("GET", API_TODOS, {}, {}, (res) => {
-                    //2.3把response里的数据设置到 PAGE.data.todos 中
+                    //2.4把response里的数据设置到 PAGE.data.todos 中
                     PAGE.data.todos = res.data;
                     console.log(PAGE.data.todos);
-                    //2.4渲染页面
+                    //2.5渲染页面
                     this.render();
                 })
             },
 
-            //修改bind方法
+            //创建bind方法
             bind: function () {
                 //3.添加数据，3.1为输入元素的绑定添加事件
                 var todosInput = document.getElementById('todo-input');
@@ -88,7 +88,7 @@
                 //5.删除数据 5.1委托绑定删除事件 removeTodo
                 this.onEventListener(todosList, 'click', 'todo-item-ft', this.removeTodo);
 
-                //6.筛选数据，委托绑定筛选事件 filterTodo
+                //6.筛选数据，6.1委托绑定筛选事件 filterTodo
                 var todosfilter = document.getElementById('todos-filter');
                 this.onEventListener(todosfilter, 'click', 'filter-item', this.filterTodo)
             },
@@ -120,16 +120,16 @@
                 todosList.innerHTML = todosElement;
             },
 
-            //3.添加数据，创建 addTodo 事件
+            //3.添加数据，3.2创建 addTodo 事件
             addTodo: function (e) {
-                //3.2判断键位和输入值
+                //3.3判断键位和输入值
                 var value = this.value.trim();
                 let key = e.which;
                 if (!value || key != 13) return;
 
-                //3.3向服务发送添加请求
+                //3.4向服务发送添加请求
                 PAGE._XHR("POST", API_TODOS, {}, { title: value }, (res) => {
-                    //3.4获取 todos 并在数组中添加一项
+                    //3.5获取 todos 并在数组中添加一项
                     const id = res.data.id;
                     let todos = PAGE.data.todos;
                     todos.push({
@@ -138,65 +138,65 @@
                         completed: 0,
                     });
                     console.log(PAGE.data.todos);
-                    //3.5重新渲染视图
+                    //3.6重新渲染视图
                     PAGE.render();
                 });
-                //3.6输入框的值设置为空
+                //3.7输入框的值设置为空
                 this.value = '';
             },
 
-            //4. 修改数据，创建 toggleTodo 事件
+            //4. 修改数据，4.3创建 toggleTodo 事件
             toggleTodo: function (e) {
-                //4.3 获取 todos 数组、父级元素、id、索引、位置
+                //4.4 获取 todos 数组、父级元素、id、索引、位置
                 let todos = PAGE.data.todos;
                 let todoItem = e.target.parentNode;
                 let index = todoItem.dataset.index;
                 let id = todoItem.dataset.id;
                 let todoData = PAGE.data.todos[index];
-                //4.4 发送修改数据请求，修改该 id 对应 todo 的 completed 状态
+                //4.5 发送修改数据请求，修改该 id 对应 todo 的 completed 状态
                 PAGE._XHR("PUT", API_TODO(id), {}, {completed: Number(!todoData.completed)}, () => {
-                    //4.5 修改 todos 索引下项目 completed 完成属性的值
+                    //4.6 修改 todos 索引下项目 completed 完成属性的值
                     todos[index].completed = Number(!todoData.completed);
                     console.log(PAGE.data.todos);
-                    //4.6重新渲染视图
+                    //4.7重新渲染视图
                     PAGE.render();
                 });
             },
 
-            //5.删除数据，创建 removeTodo 事件
+            //5.删除数据，5.2创建 removeTodo 事件
             removeTodo: function (e) {
-                //5.2 获取 todos 数组、父级元素、位置索引、id
+                //5.3 获取 todos 数组、父级元素、位置索引、id
                 let todos = PAGE.data.todos;
                 let todoItem = e.target.parentNode;
                 let index = todoItem.dataset.index;
                 let id = todoItem.dataset.id;
-                //5.3发送删除数据请求，删除该 id 对应 todo
+                //5.4发送删除数据请求，删除该 id 对应 todo
                 PAGE._XHR("DELETE", API_TODO(id), {}, {}, () => {
-                    //5.4删除 todos 索引下项目
+                    //5.5删除 todos 索引下项目
                     todos.splice(index, 1);
                     console.log(PAGE.data.todos);
-                    //5.5重新渲染视图
+                    //5.6重新渲染视图
                     PAGE.render();
                 })
             },
 
-            //6.筛选数据，创建 filterTodo 事件
+            //6.筛选数据，6.2创建 filterTodo 事件
             filterTodo: function (e) {
-                //6.1 获取筛选规则
+                //6.3 获取筛选规则
                 let completed = e.target.dataset.completed;
-                //6.2 通过筛选条件请求数据
+                //6.4 通过筛选条件请求数据
                 PAGE._XHR("GET", API_TODOS, { completed: completed }, {}, (res) => {
-                    // 6.3. 重新渲染视图
+                    // 6.5 重新渲染视图
                     PAGE.data.todos = res.data;
                     console.log(PAGE.data.todos);
                     PAGE.render();
                 });
-                //6.4 切换筛选样式
+                //6.6 切换筛选样式
                 document.querySelectorAll(".filter-item").forEach(d => d.className = "filter-item");
                 e.target.className = "filter-item active";
             },
 
-            //1.2. 定义公共请求方法 _XHR
+            //1.构建公共方法，1.2. 定义公共请求方法 _XHR
             _XHR(method, url, params, datas, success) {
                 const xhr = new XMLHttpRequest();
 
@@ -227,7 +227,7 @@
 
         }
 
-        // 5. 在外部调用 PAGE 的 init 方法
+        // 7. 在外部调用 PAGE 的 init 方法
         PAGE.init();
         
     </script>
