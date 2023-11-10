@@ -9,6 +9,7 @@
 </head>
 
 <body>
+    <!-- todos Request版本 -->
     <!-- 参考HTML结构： -->
 
     <div class="todos-container">
@@ -44,6 +45,15 @@
     </div>
 
     <script>
+        // todos Request版本
+        /* 实现内容：
+            1.构建公共方法
+            2.获取数据
+            3.添加数据
+            4.修改数据
+            5.删除数据
+            6.筛选数据 */
+            
         //1. 构建公共方法 1.1 定义 API 接口
         const API_TODOS = "https://api.aitschool.com/api/web/todos";
         const API_TODO = id => `https://api.aitschool.com/api/web/todos/${id}`;
@@ -154,7 +164,7 @@
                 let id = todoItem.dataset.id;
                 let todoData = PAGE.data.todos[index];
                 //4.5 发送修改数据请求，修改该 id 对应 todo 的 completed 状态
-                PAGE._XHR("PUT", API_TODO(id), {}, {completed: Number(!todoData.completed)}, () => {
+                PAGE._XHR("PUT", API_TODO(id), {}, { completed: Number(!todoData.completed) }, () => {
                     //4.6 修改 todos 索引下项目 completed 完成属性的值
                     todos[index].completed = Number(!todoData.completed);
                     console.log(PAGE.data.todos);
@@ -229,7 +239,7 @@
 
         // 7. 在外部调用 PAGE 的 init 方法
         PAGE.init();
-        
+
     </script>
 </body>
 
