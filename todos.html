@@ -4,22 +4,24 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Todos</title>
+    <title>Mytodos</title>
     <link rel="stylesheet" href="./todos.css">
 </head>
 
 <body>
     <!-- 参考HTML结构： -->
+
     <div class="todos-container">
+
         <h1 class="todos-title">todos</h1>
 
         <div class="todos-content">
 
             <div class="todos-input-cell">
-                <input class="todos-input" id="todos-input" type="text" name="todo" placeholder="请输入计划事项" >
+                <input id="todo-input" class="todo-input" type="text" name="todo" placeholder="请输入计划事项">
             </div>
 
-            <div class="todos-list" id="todos-list">
+            <div id="todos-list" class="todos-list">
                 <div class="todo-item">
                     <div class="todo-item-hd"></div>
                     <div class="todo-item-bd">打一瓶酱油</div>
@@ -32,63 +34,202 @@
                 </div>
             </div>
 
+            <div class="todos-filter" id="todos-filter">
+                <span class="filter-item active" data-completed="">全部</span>
+                <span class="filter-item" data-completed="0">待办</span>
+                <span class="filter-item" data-completed="1">已办</span>
+            </div>
+
         </div>
-        
     </div>
 
     <script>
-        var todosInput=document.getElementById('todos-input');
-        var todosList=document.getElementById('todos-list');
+        // 1.1 定义 API 接口
+        const API_TODOS = "https://api.aitschool.com/api/web/todos";
+        const API_TODO = id => `https://api.aitschool.com/api/web/todos/${id}`;
 
-        // 输入框元素绑定键盘事件 keyup
-        todosInput.addEventListener('keyup', function(e){
-            // 1. 获取输入框的输入值
-            var value = this.value.trim();
-            // 2. 获取当前按下的键位
-            let key = e.which;
-            // 3. 如果按下的不是 ENTER 键或者输入框没有输入值，返回结束
-            if(!value || key != 13) return;
-            // 4. 创建项目所包含元素
-            let todoItem = document.createElement('div');
-            let todoItemHd = document.createElement('div');
-            let todoItemBd = document.createElement('div');
-            let todoItemFt = document.createElement('div');
-            // 5. 为所创建的元素添加 className 属性
-            todoItem.setAttribute('class', 'todo-item');
-            todoItemHd.setAttribute('class', 'todo-item-hd');
-            todoItemBd.setAttribute('class', 'todo-item-bd');
-            todoItemFt.setAttribute('class', 'todo-item-ft');
-            // 6. 为创建的元素添加文本值
-            todoItemBd.innerText = value;
-            todoItemFt.innerText = 'x';
-            // 7. 把新建的项目元素添加到列表中
-            todosList.appendChild(todoItem);
-            todoItem.appendChild(todoItemHd);
-            todoItem.appendChild(todoItemBd);
-            todoItem.appendChild(todoItemFt);
-            // 8. 把输入框元素的值设置为空
-            this.value = '';
-        })
+        //创建一个 PAGE 全局对象
+        const PAGE = {
 
-        // 为其父元素 todo-list 绑定点击事件
-        todosList.addEventListener('click', function(e){
-            // 1. 获取实际点击的元素 className
-            var className = e.target.className;
-            // 2. 获取实际点击项目的父级元素
-            let todoItem = e.target.parentNode;
-            // 3. 如果点击的是项目的状态元素，则切换其项目的状态
-            if(className == 'todo-item-hd'){
-                let isActive = todoItem.className.indexOf('active');
-                if(isActive>=0){
-                    todoItem.className = 'todo-item';
+            //定义 PAGE.data 数据集合
+            data: {
+                todos: [],
+            },
+
+            //init方法
+            init: function () {
+                this.bind();
+                //2.获取数据  2.1把 init 方法中的 render 替换为 getTodos 方法，获取数据后再 render
+                this.getTodos();
+            },
+
+            //2.获取数据，修改getTodos 方法
+            getTodos: function () {
+                //2.2通过 XHR 和 API 获取 todos 的数据。
+                this._XHR("GET", API_TODOS, {}, {}, (res) => {
+                    //2.3把response里的数据设置到 PAGE.data.todos 中
+                    PAGE.data.todos = res.data;
+                    console.log(PAGE.data.todos);
+                    //2.4渲染页面
+                    this.render();
+                })
+            },
+
+            //修改bind方法
+            bind: function () {
+                //3.添加数据，3.1为输入元素的绑定添加事件
+                var todosInput = document.getElementById('todo-input');
+                todosInput.addEventListener('keyup', this.addTodo);
+
+                //4. 修改数据，4.2委托绑定切换事件 toggleTodo
+                var todosList = document.getElementById('todos-list');
+                this.onEventListener(todosList, 'click', 'todo-item-hd', this.toggleTodo);
+
+                //5.删除数据 5.1委托绑定删除事件 removeTodo
+                this.onEventListener(todosList, 'click', 'todo-item-ft', this.removeTodo);
+
+                //6.筛选数据，委托绑定筛选事件 filterTodo
+                var todosfilter = document.getElementById('todos-filter');
+                this.onEventListener(todosfilter, 'click', 'filter-item', this.filterTodo)
+            },
+
+            // 4. 修改数据，4.1添加 onEventListener 委托绑定方法
+            onEventListener: function (parentNode, action, childClassName, callback) {
+                parentNode.addEventListener(action, function (e) {
+                    e.target.className.indexOf(childClassName) >= 0 && callback(e);
+                })
+            },
+
+            /*2.获取数据 2.5 修改 render 渲染方法 */
+            render: function () {
+                //获取 PAGE.data.todos 应用的数据
+                let todos = this.data.todos;
+
+                let todosElement = todos.map(
+                    function (data, index) {
+                        return ` 
+                        <div class="todo-item ${data.completed ? 'active' : ''}" data-id="${data.id}" data-index="${index}">
+                            <div class="todo-item-hd"></div>
+                            <div class="todo-item-bd">${data.title}</div>
+                            <div class="todo-item-ft">x</div>
+                        </div>
+                        `;
+                    }).join('');
+
+                let todosList = document.getElementById('todos-list');
+                todosList.innerHTML = todosElement;
+            },
+
+            //3.添加数据，创建 addTodo 事件
+            addTodo: function (e) {
+                //3.2判断键位和输入值
+                var value = this.value.trim();
+                let key = e.which;
+                if (!value || key != 13) return;
+
+                //3.3向服务发送添加请求
+                PAGE._XHR("POST", API_TODOS, {}, { title: value }, (res) => {
+                    //3.4获取 todos 并在数组中添加一项
+                    const id = res.data.id;
+                    let todos = PAGE.data.todos;
+                    todos.push({
+                        id: id,
+                        title: value,
+                        completed: 0,
+                    });
+                    console.log(PAGE.data.todos);
+                    //3.5重新渲染视图
+                    PAGE.render();
+                });
+                //3.6输入框的值设置为空
+                this.value = '';
+            },
+
+            //4. 修改数据，创建 toggleTodo 事件
+            toggleTodo: function (e) {
+                //4.3 获取 todos 数组、父级元素、id、索引、位置
+                let todos = PAGE.data.todos;
+                let todoItem = e.target.parentNode;
+                let index = todoItem.dataset.index;
+                let id = todoItem.dataset.id;
+                let todoData = PAGE.data.todos[index];
+                //4.4 发送修改数据请求，修改该 id 对应 todo 的 completed 状态
+                PAGE._XHR("PUT", API_TODO(id), {}, {completed: Number(!todoData.completed)}, () => {
+                    //4.5 修改 todos 索引下项目 completed 完成属性的值
+                    todos[index].completed = Number(!todoData.completed);
+                    console.log(PAGE.data.todos);
+                    //4.6重新渲染视图
+                    PAGE.render();
+                });
+            },
+
+            //5.删除数据，创建 removeTodo 事件
+            removeTodo: function (e) {
+                //5.2 获取 todos 数组、父级元素、位置索引、id
+                let todos = PAGE.data.todos;
+                let todoItem = e.target.parentNode;
+                let index = todoItem.dataset.index;
+                let id = todoItem.dataset.id;
+                //5.3发送删除数据请求，删除该 id 对应 todo
+                PAGE._XHR("DELETE", API_TODO(id), {}, {}, () => {
+                    //5.4删除 todos 索引下项目
+                    todos.splice(index, 1);
+                    console.log(PAGE.data.todos);
+                    //5.5重新渲染视图
+                    PAGE.render();
+                })
+            },
+
+            //6.筛选数据，创建 filterTodo 事件
+            filterTodo: function (e) {
+                //6.1 获取筛选规则
+                let completed = e.target.dataset.completed;
+                //6.2 通过筛选条件请求数据
+                PAGE._XHR("GET", API_TODOS, { completed: completed }, {}, (res) => {
+                    // 6.3. 重新渲染视图
+                    PAGE.data.todos = res.data;
+                    console.log(PAGE.data.todos);
+                    PAGE.render();
+                });
+                //6.4 切换筛选样式
+                document.querySelectorAll(".filter-item").forEach(d => d.className = "filter-item");
+                e.target.className = "filter-item active";
+            },
+
+            //1.2. 定义公共请求方法 _XHR
+            _XHR(method, url, params, datas, success) {
+                const xhr = new XMLHttpRequest();
+
+                const formatParams = Object.keys(params).map((k) => `${k}=${params[k]}`).join('&');
+                const formatUrl = formatParams ? `${url}?${formatParams}` : url;
+
+                xhr.open(method, formatUrl, true);
+
+                const formatData = new URLSearchParams();
+                for (let key in datas) {
+                    formatData.append(key, datas[key]);
                 }
-                else todoItem.className += ' active';
+
+                xhr.onerror = function () {
+                    console.log(xhr, xhr.status, xhr.responseText);
+                }
+
+                xhr.onreadystatechange = function () {
+                    if (xhr.readyState == 4 && xhr.status == 200 && xhr.responseText != "") {
+                        typeof success === 'function' && success(JSON.parse(xhr.response))
+                    } else if (xhr.status != 200 && xhr.responseText) {
+                        console.log(xhr, xhr.status, xhr.responseText);
+                    }
+                }
+
+                xhr.send(formatData);
             }
-            // 4. 如果点击的是项目的关闭元素，删除其父级元素
-            if(className == 'todo-item-ft'){
-                todoItem.remove();
-            }
-        })
+
+        }
+
+        // 5. 在外部调用 PAGE 的 init 方法
+        PAGE.init();
+        
     </script>
 </body>
 
